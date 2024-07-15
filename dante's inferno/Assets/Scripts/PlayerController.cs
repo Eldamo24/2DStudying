@@ -3,9 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngineInternal;
 
 public class PlayerController : MonoBehaviour
 {
@@ -26,12 +28,25 @@ public class PlayerController : MonoBehaviour
     private SpriteRenderer _playerSprite;
 
     private Animator _playerAnim;
+    private State state;
+    public IdleState idleState;
+    public RunState runState;
+    public JumpState jumpState;
+
+    public Animator PlayerAnim { get => _playerAnim; }
+    public bool IsGrounded { get => _isGrounded; }
+    public Vector2 MoveVector { get => _moveVector; }
 
     private void Awake()
     {
         _playerRb = GetComponent<Rigidbody2D>();
         _playerSprite = GetComponent<SpriteRenderer>();
         _playerAnim = GetComponent<Animator>();
+    }
+
+    private void Start()
+    {
+        state = idleState;
     }
 
     // Update is called once per frame
@@ -43,8 +58,32 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         _isGrounded = CheckGround();
-        AnimationsState();
         FlipPlayer();
+        if (state.isComplete)
+        {
+            SelectState();
+        }
+        state.Do();
+    }
+
+    private void SelectState()
+    {
+        if (_isGrounded)
+        {
+            if(_moveVector == Vector2.zero)
+            {
+                state = idleState;
+            }
+            else
+            {
+                state = runState;
+            }
+        }
+        else
+        {
+            state = jumpState;
+        }
+        state.Enter();
     }
 
     private void MovePlayer()
@@ -87,27 +126,6 @@ public class PlayerController : MonoBehaviour
         else
         {
             return false;
-        }
-    }
-
-    private void AnimationsState()
-    {
-        if (!_isGrounded)
-        {
-            _playerAnim.SetBool("Jumping", true);
-        }
-        else
-        {
-            _playerAnim.SetBool("Jumping", false);
-            if (_moveVector != Vector2.zero)
-            {
-                _playerAnim.SetBool("Running", true);
-            }
-
-            if (_moveVector == Vector2.zero)
-            {
-                _playerAnim.SetBool("Running", false);
-            }
         }
     }
         
